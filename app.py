@@ -1,4 +1,5 @@
 from io import BytesIO
+import base64
 from flask import Flask, request,send_file
 import cv2
 from ultralytics import YOLO
@@ -6,6 +7,20 @@ import numpy as np
 
 app = Flask(__name__)
 model = YOLO('best.pt')
+
+def generate_frame():
+    while True:
+        # Read the image file using OpenCV
+        image = cv2.imread("result.jpg")
+
+        # Convert the image to JPEG format
+        _, buffer = cv2.imencode('.jpg', image)
+
+        # Encode the image as base64 string
+        image_base64 = base64.b64encode(buffer).decode('utf-8')
+
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + image_base64 + b'\r\n')
 
 @app.route('/receive_frame', methods=['POST'])
 def receive_frame():
@@ -30,6 +45,12 @@ def send_frame():
 
     # Return the image
     return send_file(BytesIO(buffer), mimetype='image/jpeg')
+
+@app.route('/display_image')
+def display_image():
+    # Render template with the image URL
+    while True:
+        return render_template('display_image.html')
 
 @app.route('/')
 def hello():
